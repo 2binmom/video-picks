@@ -267,6 +267,119 @@
     .youtube-btn { width: 100%; justify-content: center; margin-top: 6px; }
     .toc-grid { grid-template-columns: 1fr 1fr; }
   }
+
+  /* ── 도장깨기 진행현황 ── */
+  .progress-box {
+    max-width: 720px;
+    margin: 20px auto 0;
+    background: white;
+    border: 2px solid #FFD6A5;
+    border-radius: 18px;
+    padding: 18px 22px;
+  }
+  .progress-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1A2744;
+  }
+  .progress-top .progress-count { color: #E8943A; }
+  .progress-track {
+    width: 100%;
+    height: 12px;
+    background: #FFF0DC;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #FF8C69, #E8943A);
+    border-radius: 999px;
+    transition: width 0.35s ease;
+  }
+  .progress-reset {
+    display: inline-block;
+    margin-top: 10px;
+    background: none;
+    border: none;
+    color: #AAA;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+  .progress-reset:hover { color: #E8943A; }
+
+  /* ── 목차 체크 표시 ── */
+  .toc-item { position: relative; }
+  .toc-check {
+    display: none;
+    margin-left: auto;
+    font-size: 13px;
+  }
+  .toc-item.watched { background: #F0FBF4; border-color: #A8E6C0; color: #16A34A; }
+  .toc-item.watched .toc-check { display: inline; }
+  .toc-item.watched .toc-num { color: #16A34A; }
+
+  /* ── 시청 완료 토글 버튼 ── */
+  .watch-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: white;
+    border: 1.5px solid #DADADA;
+    color: #999;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .watch-toggle:hover { border-color: #E8943A; color: #E8943A; }
+  .watch-toggle.checked {
+    background: #16A34A;
+    border-color: #16A34A;
+    color: white;
+  }
+  .watch-toggle.checked:hover { background: #128A3E; }
+
+  /* ── 시청 완료된 카드 ── */
+  .card.watched {
+    background: #F6FCF8;
+    border-color: #B9EAC9;
+    position: relative;
+  }
+  .card.watched .card-title-kr {
+    text-decoration: line-through;
+    color: #8FA396;
+  }
+  .card.watched .card-desc { color: #9DAEA3; }
+  .card .watched-stamp {
+    display: none;
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    transform: rotate(-14deg);
+    border: 3px solid #16A34A;
+    color: #16A34A;
+    font-weight: 800;
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    letter-spacing: 1px;
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 2;
+    background: rgba(255,255,255,0.85);
+  }
+  .card.watched .watched-stamp { display: block; }
 </style>
 </head>
 <body>
@@ -291,6 +404,18 @@
     <strong>처음에 5분도 안 본다? 이거 정말 정상이에요!</strong> 5분이 10분 되고, 그게 쌓이면서 점점 늘어나더라구요 😊<br>
     초반에는 👉 아이가 좋아할 만한 영상을 많이 찾아서 이것저것 가볍게 틀어보면서 조금씩 시간을 늘려가는 게 핵심이에요 💕
   </div>
+</div>
+
+<!-- ── 도장깨기 진행현황 ── -->
+<div class="progress-box">
+  <div class="progress-top">
+    <span>🎯 우리 아이 시청 도장깨기</span>
+    <span class="progress-count" id="progressCount">0 / 0 완료</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  <button class="progress-reset" id="progressReset" type="button">전체 초기화</button>
 </div>
 
 <!-- ── 목차 ── -->
@@ -833,6 +958,98 @@
   <a class="ig-btn" href="https://www.instagram.com/2bin_mom/?hl=ko" target="_blank">📸 인스타그램 @2bin_mom 바로가기</a>
   <p class="copyright">© 2026 투빈맘 — 무단 복제·배포 금지 🚫 | <a href="https://app.notion.com/p/293a9b27793980ad9495c40a65bb217d" target="_blank">노션 원본</a></p>
 </div>
+
+<script>
+(function () {
+  var STORAGE_KEY = 'tubinmom_video_watched_v1';
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.cards-section .card[id]'));
+  var total = cards.length;
+  var watched = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'));
+
+  var countEl = document.getElementById('progressCount');
+  var fillEl = document.getElementById('progressFill');
+  var resetBtn = document.getElementById('progressReset');
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(watched)));
+  }
+
+  function updateProgress() {
+    var n = watched.size;
+    countEl.textContent = n + ' / ' + total + ' 완료';
+    fillEl.style.width = (total ? (n / total * 100) : 0) + '%';
+  }
+
+  function renderToggle(btn, isWatched) {
+    btn.classList.toggle('checked', isWatched);
+    btn.textContent = isWatched ? '✅ 시청완료' : '☑️ 봤어요';
+    btn.setAttribute('aria-pressed', isWatched ? 'true' : 'false');
+  }
+
+  cards.forEach(function (card) {
+    var id = card.id;
+    var header = card.querySelector('.card-header');
+    var youtubeBtn = card.querySelector('.youtube-btn');
+    var isWatched = watched.has(id);
+
+    // 시청완료 스탬프
+    var stamp = document.createElement('div');
+    stamp.className = 'watched-stamp';
+    stamp.textContent = '시청완료';
+    card.appendChild(stamp);
+
+    // 시청 토글 버튼
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'watch-toggle';
+    renderToggle(btn, isWatched);
+    header.insertBefore(btn, youtubeBtn);
+
+    if (isWatched) card.classList.add('watched');
+
+    var tocItem = document.querySelector('.toc-item[href="#' + id + '"]');
+    var tocCheck = null;
+    if (tocItem) {
+      tocCheck = document.createElement('span');
+      tocCheck.className = 'toc-check';
+      tocCheck.textContent = '✅';
+      tocItem.appendChild(tocCheck);
+      if (isWatched) tocItem.classList.add('watched');
+    }
+
+    btn.addEventListener('click', function () {
+      var nowWatched = !watched.has(id);
+      if (nowWatched) {
+        watched.add(id);
+      } else {
+        watched.delete(id);
+      }
+      card.classList.toggle('watched', nowWatched);
+      renderToggle(btn, nowWatched);
+      if (tocItem) tocItem.classList.toggle('watched', nowWatched);
+      save();
+      updateProgress();
+    });
+  });
+
+  resetBtn.addEventListener('click', function () {
+    if (!confirm('시청 체크를 모두 초기화할까요?')) return;
+    watched.clear();
+    save();
+    cards.forEach(function (card) {
+      card.classList.remove('watched');
+      var btn = card.querySelector('.watch-toggle');
+      if (btn) renderToggle(btn, false);
+    });
+    document.querySelectorAll('.toc-item.watched').forEach(function (el) {
+      el.classList.remove('watched');
+    });
+    updateProgress();
+  });
+
+  updateProgress();
+})();
+</script>
 
 </body>
 </html>
