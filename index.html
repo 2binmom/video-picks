@@ -107,6 +107,43 @@
   .toc-table td.toc-info{color:var(--pink-deep); font-weight:700; font-size:12.5px;}
   .toc-table td.toc-check{width:24px; text-align:center;}
 
+  .level-label{
+    font-size:clamp(19px,3.6vw,24px); font-weight:800; margin:30px 0 14px; display:flex; align-items:center; gap:10px;
+    color:var(--ink);
+  }
+  .level-label .stars{color:#E8A93E; letter-spacing:1px;}
+
+  /* level picker / roadmap */
+  .level-picker{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 20px; margin-bottom:18px;
+  }
+  .level-picker-head{display:flex; flex-direction:column; gap:4px; margin-bottom:14px;}
+  .level-picker-head strong{font-size:15.5px; color:var(--ink);}
+  .level-picker-head span{font-size:12.5px; color:var(--sub);}
+  .roadmap{display:flex; flex-wrap:wrap; align-items:stretch; gap:6px;}
+  .roadmap-step{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    background:var(--pink-bg); border:2px solid transparent; border-radius:14px;
+    padding:10px 14px; cursor:pointer; font-family:inherit; color:var(--ink);
+    transition:all .15s; flex:1 1 140px;
+  }
+  .roadmap-step:hover{border-color:var(--pink-light);}
+  .roadmap-step.active{background:var(--pink); border-color:var(--pink); color:#fff;}
+  .roadmap-step .roadmap-stars{font-size:15px; font-weight:800; color:#E8A93E; letter-spacing:1px;}
+  .roadmap-step.active .roadmap-stars{color:#fff;}
+  .roadmap-step .roadmap-label{font-size:12px; font-weight:700; white-space:nowrap;}
+  .roadmap-arrow{display:flex; align-items:center; color:var(--sub); font-size:16px; padding:0 2px;}
+  .roadmap-next{
+    margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);
+    font-size:13px; color:var(--sub); line-height:1.6;
+  }
+  .roadmap-next strong{color:var(--pink-deep);}
+  @media (max-width:480px){
+    .roadmap-arrow{display:none;}
+    .roadmap-step{flex:1 1 100%;}
+  }
+
   /* card grid */
   .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
   .card{
@@ -235,11 +272,20 @@
     <h2>📺 연령별 영어 노출 영상 20편</h2>
   </div>
 
+  <div class="level-picker">
+    <div class="level-picker-head">
+      <strong>🎯 우리 아이 연령대 선택하기</strong>
+      <span>선택하면 그 연령대 영상만 모아서 보여드려요. (같은 걸 다시 누르면 전체보기로 돌아가요)</span>
+    </div>
+    <div class="roadmap" id="video-roadmap"></div>
+    <div class="roadmap-next" id="video-next-hint" style="display:none;"></div>
+  </div>
+
   <div class="table-wrap">
     <table class="toc-table" id="toc-table"></table>
   </div>
 
-  <div id="grid" class="grid"></div>
+  <div id="grid-wrap"></div>
 
 </div>
 
@@ -254,26 +300,32 @@
 
 <script>
 const VIDEOS = [
-  {id:"v1", num:1, emoji:"🔢", thumb:"https://yt3.googleusercontent.com/lhZzvbA1gptFuwFBPKJBsyCS7eksCbOWdX0iLNZeUygKGysu6veWmSGFVNJTGd9qfvYXoPTJoIw=s900-c-k-c0x00ffffff-no-rj", title:"넘버블럭스", titleEn:"Numberblocks", link:"https://www.youtube.com/@Numberblocks", age:"연령 3~5세+", len:"길이 5분", genre:"수학 + 영어 애니", desc:"숫자가 친구가 되는 마법✨ 수 개념과 영어를 함께 익힐 수 있는 입문 애니🎲", learn:"숫자·수 개념(1~100), 기초 어휘, 반복 패턴 문장", feature:"영국 BBC 제작, BAFTA 후보작"},
-  {id:"v2", num:2, emoji:"🔤", thumb:"https://yt3.googleusercontent.com/4hW2cvLDW8yX5v3O_PzzyfHhQ0MCv_URg_OFOdElQ0jJ-BmiS0zXMUwikr-D1WMkC2taQO-S=s900-c-k-c0x00ffffff-no-rj", title:"알파블럭스", titleEn:"Alphablocks", link:"https://www.youtube.com/@officialalphablocks", age:"연령 3~6세", len:"길이 5분", genre:"파닉스·읽기 입문", desc:"알파벳이 모여 단어를 만드는 파닉스 애니🔤 발음과 소리 연결 익히기 좋아요💗", learn:"알파벳 소리(phonics), 단어 조합, 읽기 기초", feature:"영국 BBC 제작, 2025년 신작 시즌 방영"},
-  {id:"v3", num:3, emoji:"🐷", thumb:"https://yt3.googleusercontent.com/4sHHtkYxkkdfdqyhFG_mt1U-C46v3zt7z5jsySrXnAqRTHrnlUJfVRRF-02szzgaOhqz1eVX=s900-c-k-c0x00ffffff-no-rj", title:"페파피그", titleEn:"Peppa Pig", link:"https://www.youtube.com/@PeppaPigOfficial", age:"연령 3~7세", len:"길이 5분", genre:"일상·가족 회화", desc:"일상 영어표현의 정석!🐷 짧고 반복되는 문장으로 자연스러운 회화 감각 익히기✨", learn:"짧은 문장·반복 생활표현, 영국식 발음", feature:"2004~ 클래식, 엄마표 영어 스테디셀러, EBS 방영"},
-  {id:"v4", num:4, emoji:"🐙", thumb:"https://yt3.googleusercontent.com/45UOB3Elk3cgr5-TeFn33Msq314WsYpOHVCh6GaxTDflu76S5F04jFgA26l1xRYhFL9wduLI3w=s900-c-k-c0x00ffffff-no-rj", title:"옥토넛", titleEn:"Octonauts", link:"https://www.youtube.com/@Octonauts", age:"연령 4~9세", len:"길이 11분", genre:"과학·해양 탐험", desc:"바다탐험 구조대 이야기🌊 모험을 통해 과학 어휘와 탐구 표현을 배워요🪸", learn:"해양생물 어휘·탐구표현, 매 편 끝 \"Creature Report\" 교육송", feature:"해양생물학자 자문, Disney Junior"},
-  {id:"v5", num:5, emoji:"🐶", thumb:"https://yt3.googleusercontent.com/Ta2QXFNn12fcMfDDKm-E1UANkJvEm382lKYR1rxXuIFvJV0WrEmUsOIK0zpQ6e2ePh6xnEz-7cQ=s900-c-k-c0x00ffffff-no-rj", title:"퍼피구조대", titleEn:"PAW Patrol", link:"https://www.youtube.com/@PAWPatrolOfficial", age:"연령 3~7세", len:"길이 11분", genre:"구조·모험·팀워크", desc:"강아지 구조대의 활약!🐶 문장 반복이 많아 듣기 감각 키우기 좋아요🎧", learn:"반복문장·구조대 어휘·협동 표현", feature:"2013~ Nickelodeon Nick Jr., 전세계 최대 유아 IP"},
-  {id:"v6", num:6, emoji:"⚙️", thumb:"https://i.ytimg.com/vi/RbopyO1gJIE/maxresdefault.jpg", title:"발명왕 봉봉이", titleEn:"Chico Bon Bon", link:"https://www.youtube.com/watch?v=RbopyO1gJIE", age:"연령 3~7세", len:"길이 11~14분", genre:"STEM·공학·문제해결", desc:"도구와 발명으로 문제 해결하는 공학 애니⚙️ 논리적 사고력 + 영어 표현력 함께 키워요✨", learn:"도구 이름·문제해결 표현, 순서 설명 문장(First, Next, Then)", feature:"Netflix 오리지널(2020~), 그림책 원작"},
-  {id:"v7", num:7, emoji:"🐨", thumb:"https://i.ytimg.com/vi/q_NC2BhaKX8/maxresdefault.jpg", title:"이지의 코알라 월드", titleEn:"Izzy's Koala World", link:"https://youtu.be/q_NC2BhaKX8?si=ZyzWtt9tQERfYvn2", age:"연령 4~9세", len:"길이 15~16분", genre:"실사 다큐·동물 구조", desc:"동물 구조 스토리로 공감 표현 배우기🦘 자연스러운 감정 대화 익히기에도 좋아요💗", learn:"감정·공감 표현, 호주식 실사 영어, 동물 어휘", feature:"실제 11세 \"코알라 위스퍼러\" 주인공, Netflix Jr."},
-  {id:"v8", num:8, emoji:"👻", thumb:"https://i.ytimg.com/vi/mdMb4z9pldM/hqdefault.jpg", title:"슈퍼몬스터", titleEn:"Super Monsters", link:"https://youtube.com/playlist?list=PL8WAFcZVXspj2TJnyvR0f_g7LPkNnqSXe", age:"연령 3~6세", len:"길이 23분", genre:"유치원·사회성·판타지", desc:"귀여운 꼬마 몬스터들의 유치원 생활👻 감정 표현·사회적 대화 어휘가 풍부해요✨", learn:"감정표현·나눔·소통 어휘, 유치원 준비 스킬", feature:"Netflix 오리지널, \"사회정서 발달\" 초점"},
-  {id:"v9", num:9, emoji:"🎵", thumb:"https://yt3.googleusercontent.com/yiljI_XQcX8X0p_E2S0APGrUs7tHBMukf5_3dhVzhbH-z5uhzpt88tUopQa7ngVwO1nGAAnr6A=s900-c-k-c0x00ffffff-no-rj", title:"코코멜론", titleEn:"Cocomelon", link:"https://www.youtube.com/channel/UCbCmjCuTUZos6Inko4u57UQ", age:"연령 2~5세", len:"길이 1곡 2~3분", genre:"동요·너서리라임", desc:"전 세계 아이들이 사랑하는 영어 동요 채널🎵 짧고 반복적인 노래로 생활 영어·발음·리듬감을 자연스럽게 익히기 좋아요💗", learn:"발음·리듬·생활단어 반복 노출", feature:"유튜브 구독자 1억+ 세계 최대 동요 채널"},
-  {id:"v10", num:10, emoji:"🍞", thumb:"https://yt3.googleusercontent.com/ytc/AIdro_kjFdTVFvtgV_-RJx1Adlf5NehwtlyD7dpfJEODqQaTiLA=s900-c-k-c0x00ffffff-no-rj", title:"브레드 이발소", titleEn:"Bread Barbershop", link:"https://www.youtube.com/@breadbarbershopeng", age:"연령 3~7세", len:"길이 14분", genre:"코미디·생활·상상", desc:"유머와 반복대사로 실생활 영어 노출🍞 아이들이 지루하지 않게 웃으며 배워요😄", learn:"실생활 표현·유머 대사·반복 캐치프레이즈", feature:"한국 몬스터 스튜디오 제작, Netflix·유튜브 영어 더빙판"},
-  {id:"v11", num:11, emoji:"🔬", thumb:"images/v11.png", title:"과학자 에이디의 대단한 말썽", titleEn:"Ada Twist, Scientist", link:"https://www.youtube.com/results?search_query=Ada+Twist+Scientist", age:"연령 4세~초등저학년", len:"길이 12~15분", genre:"STEM·실험·탐구", desc:"호기심 많은 아이들의 실험 이야기🔬 탐구 표현과 Why 문장 연습에 좋아요✨", learn:"Why·How 질문문장, 가설·실험 표현, 미국식 영어", feature:"오바마 부부 Higher Ground 제작, NYT 베스트셀러 원작"},
-  {id:"v12", num:12, emoji:"💬", thumb:"images/v12.png", title:"티시태시", titleEn:"Tish Tash", link:"https://www.youtube.com/results?search_query=tish+tash+%EC%98%81%EC%96%B4", age:"연령 3~5세", len:"길이 5분", genre:"상상놀이·유아 일상", desc:"짧은 에피소드·단순 문장 중심💬 5~7세 영어 첫 노출용으로 딱 좋아요💗", learn:"단순 문장·생활 표현·상상력 어휘", feature:"한국·싱가포르·영국 공동제작, BBC CBeebies, EBS1 방영"},
-  {id:"v13", num:13, emoji:"🐾", thumb:"https://yt3.googleusercontent.com/7Jlomy-7asRjE8WHiLbAqw-LJq5VdyRpBnXU7yxLi-lqXS_OSB5Kd7MLDv9ybsafyOdi5uzCCQ=s900-c-k-c0x00ffffff-no-rj", title:"블루이", titleEn:"Bluey", link:"https://www.youtube.com/@BlueyOfficialChannel", age:"연령 4~8세 (부모 팬층도!)", len:"길이 7분", genre:"가족 일상·상상놀이", desc:"가족 일상 중심 대화 표현 풍부🐾 자연스러운 억양과 감정표현 배우기✨", learn:"감정·관계 표현, 빠른 회화, 호주식 영어", feature:"호주 ABC 제작, 디즈니+·EBS 방영, 웰메이드 애니"},
-  {id:"v14", num:14, emoji:"🎡", thumb:"https://yt3.googleusercontent.com/5RLphM956w5pfV843mKs401NNeshKiq70_KBwHdLVAhdTl323Q_qc1fxZcvyilx7pL_Rij3V=s900-c-k-c0x00ffffff-no-rj", title:"블리피", titleEn:"Blippi", link:"https://www.youtube.com/@Blippi", age:"연령 2~7세", len:"길이 5분~40분", genre:"실사·체험·탐방", desc:"실제 체험·탐방 콘텐츠🎡 놀이와 영어가 함께하는 유익한 영상💙", learn:"사물·색깔·숫자·탈것 어휘, 질문·설명 표현", feature:"유튜브 1,800만+ 구독 교육 채널, 박물관·놀이터·농장 체험"},
-  {id:"v15", num:15, emoji:"🐰", thumb:"https://yt3.googleusercontent.com/NoCjHF580rwQ6UBHzXTXHtTEcecNPmzXSFPsXXdtYZZdIo81zQQ4FYABEYriDbQHmLjJqjM64Sk=s900-c-k-c0x00ffffff-no-rj", title:"맥스 앤 루비", titleEn:"Max & Ruby", link:"https://www.youtube.com/@OfficialMaxRuby", age:"연령 2~5세", len:"길이 7분", genre:"남매·일상·유아", desc:"토끼 남매의 귀여운 일상🐰 단순 회화 표현 + 감정어휘 배우기✨", learn:"간단 회화·감정 어휘·일상 루틴 표현", feature:"2002~ 미국·캐나다 제작, Nickelodeon 롱런 시리즈"},
-  {id:"v16", num:16, emoji:"🐱", thumb:"images/v16.png", title:"슈퍼 키티즈", titleEn:"Super Kitties", link:"https://www.youtube.com/results?search_query=Super+Kitties", age:"연령 2~7세", len:"길이 11분", genre:"슈퍼히어로·팀워크·음악", desc:"네 마리 고양이 히어로들의 모험 이야기🐱💨 선한 행동·감정 표현·팀워크 관련 영어가 가득해요✨", learn:"선행동·감정 표현·팀워크 어휘, 노래 가사로 반복 학습", feature:"Disney Junior 2023~ 오리지널, 뮤지컬 요소 포함"},
-  {id:"v17", num:17, emoji:"🦄", thumb:"https://i.ytimg.com/vi/QtlZNjYPZrk/maxresdefault.jpg", title:"바다 유니콘", titleEn:"Not Quite Narwhal", link:"https://www.youtube.com/watch?v=QtlZNjYPZrk", age:"연령 3세+", len:"길이 11~13분", genre:"판타지·감정·정체성", desc:"감정 표현과 스토리 중심 애니🌈 이해력·공감력 함께 키워주는 영상💗", learn:"자아·정체성·우정 표현, 감정어휘", feature:"DreamWorks 제작 Netflix 오리지널(2023~), 그림책 원작"},
-  {id:"v18", num:18, emoji:"🐭", thumb:"https://yt3.googleusercontent.com/rwBc-9fCiRkhG73s60GJqSHGX0obpLa2qxpoFcdY01fK6HHLgMZ-smy8GKeXisu2PLRUVY37pw=s900-c-k-c0x00ffffff-no-rj", title:"투피 앤 비누", titleEn:"Toopy and Binoo", link:"https://www.youtube.com/@toopyandbinootv", age:"연령 2~6세", len:"길이 5~7분", genre:"상상놀이·우정", desc:"상상력 폭발하는 쥐와 고양이 콤비🐭 유머러스한 대사로 영어 듣기 흥미 UP🎧", learn:"상상·창의 어휘, 유머 대사, 우정·예절 표현", feature:"캐나다 제작, CBC Gem 방영"},
-  {id:"v19", num:19, emoji:"🔍", thumb:"https://yt3.googleusercontent.com/Bm4XLnKOBUqidsFtzTNZ0AsBV96f774ousjKD8hWWNoqVscrm-TnhzSZG74-XZnG7jlOsKeK9g=s900-c-k-c0x00ffffff-no-rj", title:"동물 탐정단", titleEn:"The Creature Cases", link:"https://www.youtube.com/@CreatureCases", age:"연령 4~8세", len:"길이 24분", genre:"추리·동물 과학", desc:"탐정단이 동물 사건을 해결하는 모험🔍 과학적 사고 + 영어 표현 함께 자극✨", learn:"과학적 사고·추리 표현, 관찰·증거 어휘(clue, evidence)", feature:"Sony Kids 제작 Netflix 오리지널(2022~), 실제 동물 생태 기반"},
-  {id:"v20", num:20, emoji:"🐕", thumb:"https://i.ytimg.com/vi/XCFEBi3m7Lo/maxresdefault.jpg", title:"달려라 멍멍아!", titleEn:"Go! Dog! Go!", link:"https://www.youtube.com/watch?v=XCFEBi3m7Lo", age:"연령 2~6세", len:"길이 24분", genre:"모험·도시·탈것", desc:"강아지 도시 모험 이야기🐕 생동감 있는 대사로 듣기 리듬감 익히기🎬", learn:"생동감 있는 회화·리듬, 탈것·동작 어휘", feature:"DreamWorks 제작 Netflix 오리지널, 1961년 그림책 원작"},
+  {id:"v1", band:"3", num:1, emoji:"🔢", thumb:"https://yt3.googleusercontent.com/lhZzvbA1gptFuwFBPKJBsyCS7eksCbOWdX0iLNZeUygKGysu6veWmSGFVNJTGd9qfvYXoPTJoIw=s900-c-k-c0x00ffffff-no-rj", title:"넘버블럭스", titleEn:"Numberblocks", link:"https://www.youtube.com/@Numberblocks", age:"연령 3~5세+", len:"길이 5분", genre:"수학 + 영어 애니", desc:"숫자가 친구가 되는 마법✨ 수 개념과 영어를 함께 익힐 수 있는 입문 애니🎲", learn:"숫자·수 개념(1~100), 기초 어휘, 반복 패턴 문장", feature:"영국 BBC 제작, BAFTA 후보작"},
+  {id:"v2", band:"3", num:2, emoji:"🔤", thumb:"https://yt3.googleusercontent.com/4hW2cvLDW8yX5v3O_PzzyfHhQ0MCv_URg_OFOdElQ0jJ-BmiS0zXMUwikr-D1WMkC2taQO-S=s900-c-k-c0x00ffffff-no-rj", title:"알파블럭스", titleEn:"Alphablocks", link:"https://www.youtube.com/@officialalphablocks", age:"연령 3~6세", len:"길이 5분", genre:"파닉스·읽기 입문", desc:"알파벳이 모여 단어를 만드는 파닉스 애니🔤 발음과 소리 연결 익히기 좋아요💗", learn:"알파벳 소리(phonics), 단어 조합, 읽기 기초", feature:"영국 BBC 제작, 2025년 신작 시즌 방영"},
+  {id:"v3", band:"3", num:3, emoji:"🐷", thumb:"https://yt3.googleusercontent.com/4sHHtkYxkkdfdqyhFG_mt1U-C46v3zt7z5jsySrXnAqRTHrnlUJfVRRF-02szzgaOhqz1eVX=s900-c-k-c0x00ffffff-no-rj", title:"페파피그", titleEn:"Peppa Pig", link:"https://www.youtube.com/@PeppaPigOfficial", age:"연령 3~7세", len:"길이 5분", genre:"일상·가족 회화", desc:"일상 영어표현의 정석!🐷 짧고 반복되는 문장으로 자연스러운 회화 감각 익히기✨", learn:"짧은 문장·반복 생활표현, 영국식 발음", feature:"2004~ 클래식, 엄마표 영어 스테디셀러, EBS 방영"},
+  {id:"v4", band:"4", num:4, emoji:"🐙", thumb:"https://yt3.googleusercontent.com/45UOB3Elk3cgr5-TeFn33Msq314WsYpOHVCh6GaxTDflu76S5F04jFgA26l1xRYhFL9wduLI3w=s900-c-k-c0x00ffffff-no-rj", title:"옥토넛", titleEn:"Octonauts", link:"https://www.youtube.com/@Octonauts", age:"연령 4~9세", len:"길이 11분", genre:"과학·해양 탐험", desc:"바다탐험 구조대 이야기🌊 모험을 통해 과학 어휘와 탐구 표현을 배워요🪸", learn:"해양생물 어휘·탐구표현, 매 편 끝 \"Creature Report\" 교육송", feature:"해양생물학자 자문, Disney Junior"},
+  {id:"v5", band:"3", num:5, emoji:"🐶", thumb:"https://yt3.googleusercontent.com/Ta2QXFNn12fcMfDDKm-E1UANkJvEm382lKYR1rxXuIFvJV0WrEmUsOIK0zpQ6e2ePh6xnEz-7cQ=s900-c-k-c0x00ffffff-no-rj", title:"퍼피구조대", titleEn:"PAW Patrol", link:"https://www.youtube.com/@PAWPatrolOfficial", age:"연령 3~7세", len:"길이 11분", genre:"구조·모험·팀워크", desc:"강아지 구조대의 활약!🐶 문장 반복이 많아 듣기 감각 키우기 좋아요🎧", learn:"반복문장·구조대 어휘·협동 표현", feature:"2013~ Nickelodeon Nick Jr., 전세계 최대 유아 IP"},
+  {id:"v6", band:"3", num:6, emoji:"⚙️", thumb:"https://i.ytimg.com/vi/RbopyO1gJIE/maxresdefault.jpg", title:"발명왕 봉봉이", titleEn:"Chico Bon Bon", link:"https://www.youtube.com/watch?v=RbopyO1gJIE", age:"연령 3~7세", len:"길이 11~14분", genre:"STEM·공학·문제해결", desc:"도구와 발명으로 문제 해결하는 공학 애니⚙️ 논리적 사고력 + 영어 표현력 함께 키워요✨", learn:"도구 이름·문제해결 표현, 순서 설명 문장(First, Next, Then)", feature:"Netflix 오리지널(2020~), 그림책 원작"},
+  {id:"v7", band:"4", num:7, emoji:"🐨", thumb:"https://i.ytimg.com/vi/q_NC2BhaKX8/maxresdefault.jpg", title:"이지의 코알라 월드", titleEn:"Izzy's Koala World", link:"https://youtu.be/q_NC2BhaKX8?si=ZyzWtt9tQERfYvn2", age:"연령 4~9세", len:"길이 15~16분", genre:"실사 다큐·동물 구조", desc:"동물 구조 스토리로 공감 표현 배우기🦘 자연스러운 감정 대화 익히기에도 좋아요💗", learn:"감정·공감 표현, 호주식 실사 영어, 동물 어휘", feature:"실제 11세 \"코알라 위스퍼러\" 주인공, Netflix Jr."},
+  {id:"v8", band:"3", num:8, emoji:"👻", thumb:"https://i.ytimg.com/vi/mdMb4z9pldM/hqdefault.jpg", title:"슈퍼몬스터", titleEn:"Super Monsters", link:"https://youtube.com/playlist?list=PL8WAFcZVXspj2TJnyvR0f_g7LPkNnqSXe", age:"연령 3~6세", len:"길이 23분", genre:"유치원·사회성·판타지", desc:"귀여운 꼬마 몬스터들의 유치원 생활👻 감정 표현·사회적 대화 어휘가 풍부해요✨", learn:"감정표현·나눔·소통 어휘, 유치원 준비 스킬", feature:"Netflix 오리지널, \"사회정서 발달\" 초점"},
+  {id:"v9", band:"2", num:9, emoji:"🎵", thumb:"https://yt3.googleusercontent.com/yiljI_XQcX8X0p_E2S0APGrUs7tHBMukf5_3dhVzhbH-z5uhzpt88tUopQa7ngVwO1nGAAnr6A=s900-c-k-c0x00ffffff-no-rj", title:"코코멜론", titleEn:"Cocomelon", link:"https://www.youtube.com/channel/UCbCmjCuTUZos6Inko4u57UQ", age:"연령 2~5세", len:"길이 1곡 2~3분", genre:"동요·너서리라임", desc:"전 세계 아이들이 사랑하는 영어 동요 채널🎵 짧고 반복적인 노래로 생활 영어·발음·리듬감을 자연스럽게 익히기 좋아요💗", learn:"발음·리듬·생활단어 반복 노출", feature:"유튜브 구독자 1억+ 세계 최대 동요 채널"},
+  {id:"v10", band:"3", num:10, emoji:"🍞", thumb:"https://yt3.googleusercontent.com/ytc/AIdro_kjFdTVFvtgV_-RJx1Adlf5NehwtlyD7dpfJEODqQaTiLA=s900-c-k-c0x00ffffff-no-rj", title:"브레드 이발소", titleEn:"Bread Barbershop", link:"https://www.youtube.com/@breadbarbershopeng", age:"연령 3~7세", len:"길이 14분", genre:"코미디·생활·상상", desc:"유머와 반복대사로 실생활 영어 노출🍞 아이들이 지루하지 않게 웃으며 배워요😄", learn:"실생활 표현·유머 대사·반복 캐치프레이즈", feature:"한국 몬스터 스튜디오 제작, Netflix·유튜브 영어 더빙판"},
+  {id:"v11", band:"4", num:11, emoji:"🔬", thumb:"images/v11.png", title:"과학자 에이디의 대단한 말썽", titleEn:"Ada Twist, Scientist", link:"https://www.youtube.com/results?search_query=Ada+Twist+Scientist", age:"연령 4세~초등저학년", len:"길이 12~15분", genre:"STEM·실험·탐구", desc:"호기심 많은 아이들의 실험 이야기🔬 탐구 표현과 Why 문장 연습에 좋아요✨", learn:"Why·How 질문문장, 가설·실험 표현, 미국식 영어", feature:"오바마 부부 Higher Ground 제작, NYT 베스트셀러 원작"},
+  {id:"v12", band:"3", num:12, emoji:"💬", thumb:"images/v12.png", title:"티시태시", titleEn:"Tish Tash", link:"https://www.youtube.com/results?search_query=tish+tash+%EC%98%81%EC%96%B4", age:"연령 3~5세", len:"길이 5분", genre:"상상놀이·유아 일상", desc:"짧은 에피소드·단순 문장 중심💬 5~7세 영어 첫 노출용으로 딱 좋아요💗", learn:"단순 문장·생활 표현·상상력 어휘", feature:"한국·싱가포르·영국 공동제작, BBC CBeebies, EBS1 방영"},
+  {id:"v13", band:"4", num:13, emoji:"🐾", thumb:"https://yt3.googleusercontent.com/7Jlomy-7asRjE8WHiLbAqw-LJq5VdyRpBnXU7yxLi-lqXS_OSB5Kd7MLDv9ybsafyOdi5uzCCQ=s900-c-k-c0x00ffffff-no-rj", title:"블루이", titleEn:"Bluey", link:"https://www.youtube.com/@BlueyOfficialChannel", age:"연령 4~8세 (부모 팬층도!)", len:"길이 7분", genre:"가족 일상·상상놀이", desc:"가족 일상 중심 대화 표현 풍부🐾 자연스러운 억양과 감정표현 배우기✨", learn:"감정·관계 표현, 빠른 회화, 호주식 영어", feature:"호주 ABC 제작, 디즈니+·EBS 방영, 웰메이드 애니"},
+  {id:"v14", band:"2", num:14, emoji:"🎡", thumb:"https://yt3.googleusercontent.com/5RLphM956w5pfV843mKs401NNeshKiq70_KBwHdLVAhdTl323Q_qc1fxZcvyilx7pL_Rij3V=s900-c-k-c0x00ffffff-no-rj", title:"블리피", titleEn:"Blippi", link:"https://www.youtube.com/@Blippi", age:"연령 2~7세", len:"길이 5분~40분", genre:"실사·체험·탐방", desc:"실제 체험·탐방 콘텐츠🎡 놀이와 영어가 함께하는 유익한 영상💙", learn:"사물·색깔·숫자·탈것 어휘, 질문·설명 표현", feature:"유튜브 1,800만+ 구독 교육 채널, 박물관·놀이터·농장 체험"},
+  {id:"v15", band:"2", num:15, emoji:"🐰", thumb:"https://yt3.googleusercontent.com/NoCjHF580rwQ6UBHzXTXHtTEcecNPmzXSFPsXXdtYZZdIo81zQQ4FYABEYriDbQHmLjJqjM64Sk=s900-c-k-c0x00ffffff-no-rj", title:"맥스 앤 루비", titleEn:"Max & Ruby", link:"https://www.youtube.com/@OfficialMaxRuby", age:"연령 2~5세", len:"길이 7분", genre:"남매·일상·유아", desc:"토끼 남매의 귀여운 일상🐰 단순 회화 표현 + 감정어휘 배우기✨", learn:"간단 회화·감정 어휘·일상 루틴 표현", feature:"2002~ 미국·캐나다 제작, Nickelodeon 롱런 시리즈"},
+  {id:"v16", band:"2", num:16, emoji:"🐱", thumb:"images/v16.png", title:"슈퍼 키티즈", titleEn:"Super Kitties", link:"https://www.youtube.com/results?search_query=Super+Kitties", age:"연령 2~7세", len:"길이 11분", genre:"슈퍼히어로·팀워크·음악", desc:"네 마리 고양이 히어로들의 모험 이야기🐱💨 선한 행동·감정 표현·팀워크 관련 영어가 가득해요✨", learn:"선행동·감정 표현·팀워크 어휘, 노래 가사로 반복 학습", feature:"Disney Junior 2023~ 오리지널, 뮤지컬 요소 포함"},
+  {id:"v17", band:"3", num:17, emoji:"🦄", thumb:"https://i.ytimg.com/vi/QtlZNjYPZrk/maxresdefault.jpg", title:"바다 유니콘", titleEn:"Not Quite Narwhal", link:"https://www.youtube.com/watch?v=QtlZNjYPZrk", age:"연령 3세+", len:"길이 11~13분", genre:"판타지·감정·정체성", desc:"감정 표현과 스토리 중심 애니🌈 이해력·공감력 함께 키워주는 영상💗", learn:"자아·정체성·우정 표현, 감정어휘", feature:"DreamWorks 제작 Netflix 오리지널(2023~), 그림책 원작"},
+  {id:"v18", band:"2", num:18, emoji:"🐭", thumb:"https://yt3.googleusercontent.com/rwBc-9fCiRkhG73s60GJqSHGX0obpLa2qxpoFcdY01fK6HHLgMZ-smy8GKeXisu2PLRUVY37pw=s900-c-k-c0x00ffffff-no-rj", title:"투피 앤 비누", titleEn:"Toopy and Binoo", link:"https://www.youtube.com/@toopyandbinootv", age:"연령 2~6세", len:"길이 5~7분", genre:"상상놀이·우정", desc:"상상력 폭발하는 쥐와 고양이 콤비🐭 유머러스한 대사로 영어 듣기 흥미 UP🎧", learn:"상상·창의 어휘, 유머 대사, 우정·예절 표현", feature:"캐나다 제작, CBC Gem 방영"},
+  {id:"v19", band:"4", num:19, emoji:"🔍", thumb:"https://yt3.googleusercontent.com/Bm4XLnKOBUqidsFtzTNZ0AsBV96f774ousjKD8hWWNoqVscrm-TnhzSZG74-XZnG7jlOsKeK9g=s900-c-k-c0x00ffffff-no-rj", title:"동물 탐정단", titleEn:"The Creature Cases", link:"https://www.youtube.com/@CreatureCases", age:"연령 4~8세", len:"길이 24분", genre:"추리·동물 과학", desc:"탐정단이 동물 사건을 해결하는 모험🔍 과학적 사고 + 영어 표현 함께 자극✨", learn:"과학적 사고·추리 표현, 관찰·증거 어휘(clue, evidence)", feature:"Sony Kids 제작 Netflix 오리지널(2022~), 실제 동물 생태 기반"},
+  {id:"v20", band:"2", num:20, emoji:"🐕", thumb:"https://i.ytimg.com/vi/XCFEBi3m7Lo/maxresdefault.jpg", title:"달려라 멍멍아!", titleEn:"Go! Dog! Go!", link:"https://www.youtube.com/watch?v=XCFEBi3m7Lo", age:"연령 2~6세", len:"길이 24분", genre:"모험·도시·탈것", desc:"강아지 도시 모험 이야기🐕 생동감 있는 대사로 듣기 리듬감 익히기🎬", learn:"생동감 있는 회화·리듬, 탈것·동작 어휘", feature:"DreamWorks 제작 Netflix 오리지널, 1961년 그림책 원작"},
+];
+
+const BANDS = [
+  {key:"2", stars:"2~3세", label:"아기·유아 입문", hint:"동요·짧은 반복 표현 위주"},
+  {key:"3", stars:"3~4세", label:"유아 확장", hint:"스토리·회화가 늘어나는 시기"},
+  {key:"4", stars:"4세~", label:"유아~초등 저학년", hint:"탐구·과학 주제까지 넓어지는 시기"},
 ];
 
 function cardHTML(v){
@@ -306,16 +358,80 @@ function renderToc(){
   const table = document.getElementById("toc-table");
   const thead = `<tr><th>#</th><th>제목</th><th>연령대</th></tr>`;
   const tbody = VIDEOS.map(v => `
-    <tr onclick="location.hash='${v.id}'">
+    <tr onclick="jumpToVideo('${v.id}')">
       <td>${v.num}</td>
-      <td class="toc-title"><a href="#${v.id}">${v.title}</a></td>
+      <td class="toc-title"><a href="#${v.id}" onclick="event.preventDefault(); jumpToVideo('${v.id}');">${v.title}</a></td>
       <td class="toc-info">${v.age}</td>
     </tr>`).join("");
   table.innerHTML = thead + tbody;
 }
 
+function jumpToVideo(id){
+  const band = getSavedBand();
+  const v = VIDEOS.find(x => x.id === id);
+  if (band && v && v.band !== band){
+    localStorage.removeItem("2bin_video_picks_band");
+    applyBandFilter();
+  }
+  history.replaceState(null, "", "#" + id);
+  const card = document.getElementById(id);
+  if (card) card.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function renderRoadmap(){
+  const wrap = document.getElementById("video-roadmap");
+  wrap.innerHTML = BANDS.map((b, i) => `
+    <button type="button" class="roadmap-step" data-band="${b.key}" onclick="selectBand('${b.key}')">
+      <span class="roadmap-stars">${b.stars}</span>
+      <span class="roadmap-label">${b.label}</span>
+    </button>
+    ${i < BANDS.length - 1 ? '<span class="roadmap-arrow">→</span>' : ""}
+  `).join("");
+}
+
 function renderGrid(){
-  document.getElementById("grid").innerHTML = VIDEOS.map(cardHTML).join("");
+  const wrap = document.getElementById("grid-wrap");
+  wrap.innerHTML = BANDS.map(b => `
+    <div class="level-label" id="label-band-${b.key}"><span class="stars">${b.stars}</span> ${b.label}</div>
+    <div class="grid" id="grid-band-${b.key}">${VIDEOS.filter(v => v.band === b.key).map(cardHTML).join("")}</div>
+  `).join("");
+}
+
+function getSavedBand(){ return localStorage.getItem("2bin_video_picks_band") || ""; }
+
+function selectBand(band){
+  const storeKey = "2bin_video_picks_band";
+  if (getSavedBand() === band) localStorage.removeItem(storeKey);
+  else localStorage.setItem(storeKey, band);
+  applyBandFilter();
+}
+
+function applyBandFilter(){
+  const band = getSavedBand();
+  document.querySelectorAll("#video-roadmap .roadmap-step").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.band === band);
+  });
+  BANDS.forEach(b => {
+    const show = !band || band === b.key;
+    const label = document.getElementById(`label-band-${b.key}`);
+    const grid = document.getElementById(`grid-band-${b.key}`);
+    if (label) label.style.display = show ? "" : "none";
+    if (grid) grid.style.display = show ? "" : "none";
+  });
+  const hint = document.getElementById("video-next-hint");
+  if (!band){
+    hint.style.display = "none";
+    return;
+  }
+  const idx = BANDS.findIndex(b => b.key === band);
+  const next = BANDS[idx + 1];
+  if (next){
+    const preview = VIDEOS.filter(v => v.band === next.key).slice(0, 2).map(v => v.title).join(", ");
+    hint.innerHTML = `👉 다음 연령대 <strong>${next.stars} ${next.label}</strong> 미리보기: ${preview} 등`;
+  } else {
+    hint.innerHTML = "🎉 가장 높은 연령대까지 오셨네요! 목차에서 전체 영상도 확인해보세요.";
+  }
+  hint.style.display = "block";
 }
 
 const DONE_KEY = "tubinmom_video_watched_v1";
@@ -350,9 +466,18 @@ function applyWatchedState(){
 }
 
 renderToc();
+renderRoadmap();
 renderGrid();
+applyBandFilter();
 applyWatchedState();
 document.getElementById("progressReset").addEventListener("click", resetWatched);
+
+if (location.hash){
+  const hashId = location.hash.replace("#", "");
+  if (VIDEOS.some(v => v.id === hashId)){
+    setTimeout(() => jumpToVideo(hashId), 60);
+  }
+}
 </script>
 
 </body>
