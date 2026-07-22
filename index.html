@@ -508,7 +508,7 @@ function copyText(text){
 }
 
 async function shareKakao(){
-  const url = location.href;
+  const url = location.origin + location.pathname;
   const title = document.title;
   if (navigator.share){
     try { await navigator.share({ title, url }); }
@@ -535,7 +535,12 @@ document.getElementById("progressReset").addEventListener("click", resetWatched)
 if (location.hash){
   const hashId = location.hash.replace("#", "");
   if (VIDEOS.some(v => v.id === hashId)){
-    setTimeout(() => jumpToVideo(hashId), 60);
+    setTimeout(() => {
+      jumpToVideo(hashId);
+      history.replaceState(null, "", location.pathname);
+    }, 60);
+  } else {
+    history.replaceState(null, "", location.pathname);
   }
 }
 </script>
