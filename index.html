@@ -61,6 +61,21 @@
     color:#fff; text-decoration:none; border:1.5px solid transparent; background:var(--pink-deep);
     padding:8px 16px; border-radius:999px;
   }
+  header.hero .kakao-btn{
+    display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:700;
+    color:#3A2A33; text-decoration:none; border:1.5px solid transparent; background:#FEE500;
+    padding:8px 16px; border-radius:999px; cursor:pointer; font-family:inherit;
+  }
+  header.hero .kakao-btn:active{transform:scale(.97);}
+
+  .share-toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(12px);
+    background:var(--ink); color:#fff; font-size:13.5px; font-weight:700;
+    padding:11px 20px; border-radius:999px; box-shadow:0 4px 16px rgba(0,0,0,.22);
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:50;
+    white-space:nowrap;
+  }
+  .share-toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
   .click-hint{
     text-align:center; font-size:16px; font-weight:800; color:var(--pink-deep);
@@ -243,8 +258,11 @@
   <p>실제로 저희 집에서 보여주고 있는 영상 + 입문부터 활용하기 좋은 것들만 모아서 정리했어요 🎬</p>
   <div class="btn-row">
     <a class="insta" href="https://www.instagram.com/2bin_mom/?hl=ko" target="_blank" rel="noopener">📸 @2bin_mom 인스타 보러가기</a>
+    <button type="button" class="kakao-btn" id="kakaoShareBtn">💬 카톡에 공유하기</button>
   </div>
 </header>
+
+<div class="share-toast" id="shareToast"></div>
 
 <div class="wrap">
 
@@ -464,6 +482,48 @@ function applyWatchedState(){
   document.getElementById("progressFill").style.width = Math.round((count / total) * 100) + "%";
   document.getElementById("progressCount").textContent = `${count}/${total}`;
 }
+
+function showShareToast(msg){
+  const toast = document.getElementById("shareToast");
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+function copyText(text){
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch(e) { ok = false; }
+  document.body.removeChild(ta);
+  if (ok) return Promise.resolve();
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+  return Promise.reject(new Error("copy failed"));
+}
+
+async function shareKakao(){
+  const url = location.href;
+  const title = document.title;
+  if (navigator.share){
+    try { await navigator.share({ title, url }); }
+    catch(e) { /* 사용자가 공유를 취소한 경우 */ }
+    return;
+  }
+  try {
+    await copyText(url);
+    showShareToast("💬 링크가 복사됐어요! 카톡에 붙여넣기 해주세요");
+  } catch(e){
+    showShareToast("링크 복사에 실패했어요 😢");
+  }
+}
+
+document.getElementById("kakaoShareBtn").addEventListener("click", shareKakao);
 
 renderToc();
 renderRoadmap();
