@@ -133,17 +133,6 @@
     background:var(--pink-bg); color:var(--pink-deep);
   }
   .section-head h2{font-size:clamp(20px,4.2vw,26px); margin:0 0 4px;}
-  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); margin-bottom:28px; background:#FFF;}
-  table{border-collapse:collapse; width:100%; font-size:13px; min-width:480px;}
-  th,td{padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap;}
-  th{background:var(--pink-bg); font-weight:800; color:var(--pink-deep);}
-  tr:last-child td{border-bottom:none;}
-  .toc-table tr{cursor:pointer; transition:background .12s;}
-  .toc-table tr:hover{background:var(--pink-bg);}
-  .toc-table td.toc-title a{font-weight:700; color:var(--ink); text-decoration:none;}
-  .toc-table tr:hover td.toc-title a{color:var(--pink-deep);}
-  .toc-table td.toc-info{color:var(--pink-deep); font-weight:700; font-size:12.5px;}
-  .toc-table td.toc-check{width:24px; text-align:center;}
 
   .level-label{
     font-size:clamp(19px,3.6vw,24px); font-weight:800; margin:30px 0 14px; display:flex; align-items:center; gap:10px;
@@ -346,7 +335,7 @@
   </div>
 
   <div class="click-hint">
-    <span>💡 목차를 클릭하면 해당 영상으로 이동하고, 카드를 클릭하면 유튜브로 연결돼요</span>
+    <span>💡 카드를 클릭하면 유튜브로 연결돼요</span>
   </div>
 
   <div class="search-box">
@@ -375,10 +364,6 @@
     </div>
     <div class="roadmap" id="video-roadmap"></div>
     <div class="roadmap-next" id="video-next-hint" style="display:none;"></div>
-  </div>
-
-  <div class="table-wrap">
-    <table class="toc-table" id="toc-table"></table>
   </div>
 
   <div id="grid-wrap"></div>
@@ -485,18 +470,6 @@ function cardHTML(v){
         </div>
       </div>
     </div>`;
-}
-
-function renderToc(){
-  const table = document.getElementById("toc-table");
-  const thead = `<tr><th>#</th><th>제목</th><th>연령대</th></tr>`;
-  const tbody = VIDEOS.map(v => `
-    <tr onclick="jumpToVideo('${v.id}')">
-      <td>${v.num}</td>
-      <td class="toc-title"><a href="#${v.id}" onclick="event.preventDefault(); jumpToVideo('${v.id}');">${v.title}</a></td>
-      <td class="toc-info">${v.age}</td>
-    </tr>`).join("");
-  table.innerHTML = thead + tbody;
 }
 
 function jumpToVideo(id){
@@ -609,7 +582,7 @@ function applyFilters(){
     const preview = VIDEOS.filter(v => v.band === next.key).slice(0, 2).map(v => v.title).join(", ");
     hint.innerHTML = `👉 다음 연령대 <strong>${next.stars} ${next.label}</strong> 미리보기: ${preview} 등`;
   } else {
-    hint.innerHTML = "🎉 가장 높은 연령대까지 오셨네요! 목차에서 전체 영상도 확인해보세요.";
+    hint.innerHTML = "🎉 가장 높은 연령대까지 오셨네요! 위 검색창에서 제목으로 다른 영상도 찾아보세요.";
   }
   hint.style.display = "block";
 }
@@ -687,7 +660,6 @@ async function shareKakao(){
 
 document.getElementById("kakaoShareBtn").addEventListener("click", shareKakao);
 
-renderToc();
 renderRoadmap();
 renderGrid();
 applyBandFilter();
