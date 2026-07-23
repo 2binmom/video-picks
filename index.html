@@ -159,16 +159,12 @@
     width:22px; height:22px; border-radius:50%; font-size:13px; line-height:1; cursor:pointer;
   }
   .search-clear.show{display:block;}
-  .search-empty{
-    display:none; text-align:center; color:var(--sub); font-size:13.5px;
-    padding:24px 12px; margin-bottom:18px;
-  }
-  .search-empty.show{display:block;}
 
   /* bottom app nav (모바일 앱처럼 하단 고정) */
   body{padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+  body.search-open{overflow:hidden;}
   .bottom-nav{
-    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    position:fixed; left:0; right:0; bottom:0; z-index:60;
     display:flex; background:var(--card); border-top:1px solid var(--line);
     padding:6px 0 calc(6px + env(safe-area-inset-bottom));
     box-shadow:0 -2px 12px rgba(58,42,51,.06);
@@ -180,14 +176,26 @@
   .bottom-nav-btn svg{color:var(--sub);}
   .bottom-nav-btn.active{color:var(--pink-deep); font-weight:700;}
   .bottom-nav-btn.active svg{color:var(--pink-deep);}
-  .bottom-search-panel{
-    position:fixed; left:0; right:0; bottom:calc(64px + env(safe-area-inset-bottom)); z-index:39;
-    background:var(--bg); border-top:1px solid var(--line);
-    padding:12px 18px; transform:translateY(120%); transition:transform .22s ease;
+
+  /* 소시네처럼 검색은 단독 전체화면으로 전환 (기존 홈 화면은 뒤에서 완전히 가려짐) */
+  .search-screen{
+    position:fixed; inset:0; z-index:50; background:var(--bg);
+    display:flex; flex-direction:column;
+    opacity:0; pointer-events:none; transition:opacity .18s ease;
   }
-  .bottom-search-panel.open{transform:translateY(0);}
-  .bottom-search-panel-inner{max-width:920px; margin:0 auto;}
-  .bottom-search-panel .search-box{margin-bottom:0;}
+  .search-screen.open{opacity:1; pointer-events:auto;}
+  .search-screen-head{
+    background:var(--card); border-bottom:1px solid var(--line);
+    padding:calc(16px + env(safe-area-inset-top)) 18px 14px; flex-shrink:0;
+  }
+  .search-screen-head .search-box{margin-bottom:0;}
+  .search-screen-body{
+    flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:18px 18px calc(80px + env(safe-area-inset-bottom));
+  }
+  .search-hint{text-align:center; color:var(--sub); font-size:14px; margin-top:64px; line-height:1.7;}
+  .search-results-grid{display:flex; flex-direction:column; gap:14px; max-width:520px; margin:0 auto;}
+  .search-results-grid .card{width:100%; flex:none; scroll-snap-align:none;}
 
   /* level picker / roadmap */
   .level-picker{
@@ -362,8 +370,6 @@
     <span>💡 카드를 클릭하면 유튜브로 연결돼요</span>
   </div>
 
-  <p class="search-empty" id="video-search-empty">검색 결과가 없어요 🥲 다른 제목으로 찾아보세요</p>
-
   <div class="progress-wrap">
     <span>시청한 영상</span>
     <div class="progress-bar"><i id="progressFill"></i></div>
@@ -416,22 +422,25 @@
   </div>
 </div>
 
-<div class="bottom-search-panel" id="bottomSearchPanel">
-  <div class="bottom-search-panel-inner">
+<div class="search-screen" id="searchScreen">
+  <div class="search-screen-head">
     <div class="search-box">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="video-search-input" placeholder="영상 제목으로 찾기 (예: 블루이, Bluey)" oninput="applySearch()" autocomplete="off">
       <button type="button" class="search-clear" id="video-search-clear" onclick="clearSearch()" aria-label="검색 지우기">✕</button>
     </div>
   </div>
+  <div class="search-screen-body" id="searchResults">
+    <p class="search-hint">🔍 영상 제목을 입력해보세요</p>
+  </div>
 </div>
 
 <nav class="bottom-nav">
-  <button type="button" class="bottom-nav-btn active" id="bottomNavHome" onclick="bottomNavGoHome()">
+  <button type="button" class="bottom-nav-btn active" id="bottomNavHome" onclick="goHome()">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
     <span>홈</span>
   </button>
-  <button type="button" class="bottom-nav-btn" id="bottomNavSearch" onclick="toggleBottomSearch()">
+  <button type="button" class="bottom-nav-btn" id="bottomNavSearch" onclick="openSearchScreen()">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <span>검색</span>
   </button>
@@ -558,82 +567,25 @@ function getSavedBand(){ return localStorage.getItem("2bin_video_picks_band") ||
 
 function selectBand(band){
   const storeKey = "2bin_video_picks_band";
-  clearSearch();
   if (getSavedBand() === band) localStorage.removeItem(storeKey);
   else localStorage.setItem(storeKey, band);
-  applyFilters();
+  applyBandFilter();
 }
 
-function getSearchQuery(){
-  const input = document.getElementById("video-search-input");
-  return input ? input.value.trim().toLowerCase() : "";
-}
-
-function applySearch(){
-  const q = getSearchQuery();
-  document.getElementById("video-search-clear").classList.toggle("show", !!q);
-  applyFilters();
-}
-
-function clearSearch(){
-  const input = document.getElementById("video-search-input");
-  if (input) input.value = "";
-  document.getElementById("video-search-clear").classList.remove("show");
-  applyFilters();
-}
-
-function applyBandFilter(){ applyFilters(); }
-
-function setBottomNavActive(which){
-  document.getElementById("bottomNavHome").classList.toggle("active", which === "home");
-  document.getElementById("bottomNavSearch").classList.toggle("active", which === "search");
-}
-
-function toggleBottomSearch(){
-  const panel = document.getElementById("bottomSearchPanel");
-  const opening = !panel.classList.contains("open");
-  panel.classList.toggle("open", opening);
-  setBottomNavActive(opening ? "search" : "home");
-  if (opening){
-    setTimeout(() => document.getElementById("video-search-input").focus(), 220);
-  }
-}
-
-function bottomNavGoHome(){
-  document.getElementById("bottomSearchPanel").classList.remove("open");
-  setBottomNavActive("home");
-  window.scrollTo({top: 0, behavior: "smooth"});
-}
-
-function applyFilters(){
-  const q = getSearchQuery();
+function applyBandFilter(){
   const band = getSavedBand();
   document.querySelectorAll("#video-roadmap .roadmap-step").forEach(btn => {
-    btn.classList.toggle("active", !q && btn.dataset.band === band);
+    btn.classList.toggle("active", btn.dataset.band === band);
   });
-
-  let totalVisible = 0;
   BANDS.forEach(b => {
+    const show = !band || band === b.key;
     const label = document.getElementById(`label-band-${b.key}`);
     const grid = document.getElementById(`grid-band-${b.key}`);
-    if (!grid) return;
-    const bandAllowed = q || !band || band === b.key;
-    let anyCardVisible = false;
-    grid.querySelectorAll(".card").forEach(card => {
-      const v = VIDEOS.find(x => x.id === card.id);
-      const matches = !q || `${v.title} ${v.titleEn}`.toLowerCase().includes(q);
-      const show = bandAllowed && matches;
-      card.style.display = show ? "" : "none";
-      if (show){ anyCardVisible = true; totalVisible++; }
-    });
-    if (label) label.style.display = anyCardVisible ? "" : "none";
-    grid.style.display = anyCardVisible ? "" : "none";
+    if (label) label.style.display = show ? "" : "none";
+    if (grid) grid.style.display = show ? "" : "none";
   });
-
-  document.getElementById("video-search-empty").classList.toggle("show", !!q && totalVisible === 0);
-
   const hint = document.getElementById("video-next-hint");
-  if (q || !band){
+  if (!band){
     hint.style.display = "none";
     return;
   }
@@ -643,9 +595,64 @@ function applyFilters(){
     const preview = VIDEOS.filter(v => v.band === next.key).slice(0, 2).map(v => v.title).join(", ");
     hint.innerHTML = `👉 다음 연령대 <strong>${next.stars} ${next.label}</strong> 미리보기: ${preview} 등`;
   } else {
-    hint.innerHTML = "🎉 가장 높은 연령대까지 오셨네요! 위 검색창에서 제목으로 다른 영상도 찾아보세요.";
+    hint.innerHTML = "🎉 가장 높은 연령대까지 오셨네요! 하단 검색 탭에서 제목으로 다른 영상도 찾아보세요.";
   }
   hint.style.display = "block";
+}
+
+/* ---- 검색: 소시네처럼 홈과 분리된 단독 화면 ---- */
+function getSearchQuery(){
+  const input = document.getElementById("video-search-input");
+  return input ? input.value.trim().toLowerCase() : "";
+}
+
+function applySearch(){
+  const q = getSearchQuery();
+  document.getElementById("video-search-clear").classList.toggle("show", !!q);
+  renderSearchResults();
+}
+
+function clearSearch(){
+  const input = document.getElementById("video-search-input");
+  if (input) input.value = "";
+  document.getElementById("video-search-clear").classList.remove("show");
+  renderSearchResults();
+  input.focus();
+}
+
+function renderSearchResults(){
+  const q = getSearchQuery();
+  const container = document.getElementById("searchResults");
+  if (!q){
+    container.innerHTML = `<p class="search-hint">🔍 영상 제목을 입력해보세요</p>`;
+    return;
+  }
+  const matches = VIDEOS.filter(v => `${v.title} ${v.titleEn}`.toLowerCase().includes(q));
+  if (matches.length === 0){
+    container.innerHTML = `<p class="search-hint">검색 결과가 없어요 🥲<br>다른 제목으로 찾아보세요</p>`;
+    return;
+  }
+  container.innerHTML = `<div class="search-results-grid">${matches.map(cardHTML).join("")}</div>`;
+  applyWatchedState();
+}
+
+function setBottomNavActive(which){
+  document.getElementById("bottomNavHome").classList.toggle("active", which === "home");
+  document.getElementById("bottomNavSearch").classList.toggle("active", which === "search");
+}
+
+function openSearchScreen(){
+  document.getElementById("searchScreen").classList.add("open");
+  document.body.classList.add("search-open");
+  setBottomNavActive("search");
+  setTimeout(() => document.getElementById("video-search-input").focus(), 200);
+}
+
+function goHome(){
+  document.getElementById("searchScreen").classList.remove("open");
+  document.body.classList.remove("search-open");
+  setBottomNavActive("home");
+  window.scrollTo({top: 0, behavior: "smooth"});
 }
 
 const DONE_KEY = "tubinmom_video_watched_v1";
