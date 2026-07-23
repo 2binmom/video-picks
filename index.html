@@ -150,6 +150,7 @@
     color:var(--ink);
   }
   .level-label .stars{color:#E8A93E; letter-spacing:1px;}
+  .level-label .scroll-hint{font-size:12.5px; font-weight:700; color:var(--sub); margin-left:auto;}
 
   /* level picker / roadmap */
   .level-picker{
@@ -183,12 +184,18 @@
   }
 
   /* card grid */
-  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+  .grid{
+    display:flex; gap:14px; overflow-x:auto; padding:2px 2px 14px;
+    scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch;
+  }
+  .grid::-webkit-scrollbar{height:7px;}
+  .grid::-webkit-scrollbar-track{background:transparent;}
+  .grid::-webkit-scrollbar-thumb{background:var(--pink-light); border-radius:999px;}
   .card{
     background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column;
     transition:transform .15s ease, box-shadow .15s ease; position:relative;
-    scroll-margin-top:16px;
+    scroll-margin-top:16px; flex:0 0 260px; width:260px; scroll-snap-align:start;
   }
   .cover{
     width:100%; aspect-ratio:16/9; background:var(--pink-bg); display:flex; align-items:center;
@@ -268,7 +275,7 @@
   :root[data-theme="light"] .tag.tag-pub{background:#EAF1FB; color:#3B6FA0;}
 
   @media (max-width:600px){
-    .grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
+    .card{flex-basis:220px; width:220px;}
   }
 </style>
 </head>
@@ -470,7 +477,7 @@ function renderRoadmap(){
 function renderGrid(){
   const wrap = document.getElementById("grid-wrap");
   wrap.innerHTML = BANDS.map(b => `
-    <div class="level-label" id="label-band-${b.key}"><span class="stars">${b.stars}</span> ${b.label}</div>
+    <div class="level-label" id="label-band-${b.key}"><span class="stars">${b.stars}</span> ${b.label} <span class="scroll-hint">옆으로 넘겨보세요 →</span></div>
     <div class="grid" id="grid-band-${b.key}">${VIDEOS.filter(v => v.band === b.key).map(cardHTML).join("")}</div>
   `).join("");
 }
