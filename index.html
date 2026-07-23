@@ -566,6 +566,7 @@ function clearSearch(){
   const input = document.getElementById("video-search-input");
   if (input) input.value = "";
   document.getElementById("video-search-clear").classList.remove("show");
+  applyFilters();
 }
 
 function applyBandFilter(){ applyFilters(); }
