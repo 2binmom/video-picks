@@ -367,7 +367,7 @@
   </div>
 
   <div class="click-hint">
-    <span>💡 카드를 클릭하면 유튜브로 연결돼요</span>
+    <span>💡 카드를 클릭하면 미리보기가 떠요</span>
   </div>
 
   <div class="progress-wrap">
@@ -545,7 +545,7 @@ function renderRoadmap(){
 }
 
 function scrollCarousel(bandKey, dir){
-  const grid = document.getElementById(`grid-band-${bandKey}`);
+  const grid = document.getElementById(`grid-row-${bandKey}`);
   if (!grid) return;
   const amount = Math.round(grid.clientWidth * 0.85) * dir;
   grid.scrollBy({left: amount, behavior:"smooth"});
@@ -555,9 +555,9 @@ function renderGrid(){
   const wrap = document.getElementById("grid-wrap");
   wrap.innerHTML = BANDS.map(b => `
     <div class="level-label" id="label-band-${b.key}"><span class="stars">${b.stars}</span> ${b.label} <span class="scroll-hint">옆으로 넘겨보세요 →</span></div>
-    <div class="carousel-wrap">
+    <div class="carousel-wrap" id="grid-band-${b.key}">
       <button type="button" class="carousel-btn prev" onclick="scrollCarousel('${b.key}',-1)" aria-label="이전 카드">‹</button>
-      <div class="grid" id="grid-band-${b.key}">${VIDEOS.filter(v => v.band === b.key).map(cardHTML).join("")}</div>
+      <div class="grid" id="grid-row-${b.key}">${VIDEOS.filter(v => v.band === b.key).map(cardHTML).join("")}</div>
       <button type="button" class="carousel-btn next" onclick="scrollCarousel('${b.key}',1)" aria-label="다음 카드">›</button>
     </div>
   `).join("");
